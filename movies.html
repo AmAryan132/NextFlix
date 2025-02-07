@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Movies - NextVerse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <style>
+        /* Base styles (shared between desktop and mobile) */
+        :root {
+            --content-padding: clamp(1rem, 4vw, 4rem);
+            --card-width: clamp(260px, 30vw, 320px);
+            --card-height: clamp(146px, 16.875vw, 180px);
+            --title-size: clamp(1.5rem, 2.5vw, 2.5rem);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background: #0f0f1a;
+            color: white;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: linear-gradient(to bottom, 
+                rgba(0, 0, 0, 0.7) 0%,
+                rgba(0, 0, 0, 0.3) 60%,
+                transparent 100%);
+            z-index: 1000;
+            transition: background 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #2196f3;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 2px;
+        }
+
+        .search-bar {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            color: white;
+            width: 180px;
+            font-size: 0.9rem;
+        }
+
+        .search-bar::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-bar:focus {
+            outline: none;
+        }
+
+        .search-button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .subscribe-button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .subscribe-button .star-icon {
+            font-size: 0.9rem;
+            order: 2;
+        }
+
+        .subscribe-button:hover {
+            background: #1976d2;
+            transform: translateY(-1px);
+        }
+
+        .star-icon {
+            font-size: 1rem;
+        }
+
+        /* Hero Section Styles */
+        .hero-section {
+            height: 80vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(15, 15, 26, 0.7) 0%,
+                rgba(15, 15, 26, 0.6) 60%,
+                #0f0f1a 100%
+            );
+            display: flex;
+            align-items: flex-end;
+            padding: 5rem var(--content-padding);
+        }
+
+        .hero-content {
+            max-width: 600px;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero-description {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .play-button, .more-info-button {
+            padding: 0.8rem 2rem;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .play-button {
+            background: white;
+            color: #0f0f1a;
+            border: none;
+        }
+
+        .more-info-button {
+            background: rgba(109, 109, 110, 0.7);
+            color: white;
+            border: none;
+        }
+
+        .play-button:hover {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .more-info-button:hover {
+            background: rgba(109, 109, 110, 0.5);
+        }
+
+        /* Category Navigation */
+        .category-nav {
+            position: sticky;
+            top: 0;
+            background: #0f0f1a;
+            padding: 1rem var(--content-padding);
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .category-list {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .category-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-item {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            padding: 0.5rem 0;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .category-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1rem;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #e50914;
+        }
+
+        /* Movie Grid Section */
+        .movie-grid-section {
+            padding: 3rem var(--content-padding);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .movie-card {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .movie-card:hover {
+            transform: scale(1.05);
+        }
+
+        .movie-poster {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+        }
+
+        .movie-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+        }
+
+        .movie-title {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .movie-meta {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Trending Section */
+        .trending-section {
+            position: relative;
+            padding: 2rem var(--content-padding);
+            overflow: hidden;
+        }
+
+        .trending-slider {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 2rem 0;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .trending-slider::-webkit-scrollbar {
+            display: none;
+        }
+
+        .trending-slide {
+            position: relative;
+            flex: 0 0 300px;
+            scroll-snap-align: start;
+        }
+
+        .number {
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 200px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.1);
+            z-index: -1;
+            line-height: 1;
+        }
+
+        .trending-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            transition: transform 0.3s ease;
+        }
+
+        .trending-card:hover {
+            transform: scale(1.05);
+        }
+
+        .trending-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .trending-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+        }
+
+        .trending-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .trending-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .hero-description {
+                font-size: 1rem;
+            }
+
+            .movie-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .trending-slide {
+                flex: 0 0 250px;
+            }
+            
+            .number {
+                font-size: 150px;
+                left: -10px;
+            }
+        }
+
+        /* Search Results */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(20, 20, 20, 0.95);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            gap: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .search-result-item img {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .result-meta {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        /* Add these styles */
+        .video-player-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+            display: none;
+        }
+
+        .video-player-fullscreen video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .video-controls.hidden {
+            opacity: 0;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10000;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 100%;
+            background: #E50914;
+            width: 0;
+        }
+
+        .time-display {
+            color: white;
+            font-size: 14px;
+        }
+
+        .control-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .highlights-section {
+            padding: 2rem var(--content-padding);
+            margin-top: -100px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .highlights-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .highlight-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .highlight-card.large {
+            grid-column: 1 / -1;
+            aspect-ratio: 21/9;
+        }
+
+        .highlight-card:hover {
+            transform: scale(1.02);
+        }
+
+        .highlight-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .highlight-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.2) 0%,
+                rgba(0, 0, 0, 0.8) 100%
+            );
+            padding: 2rem;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .highlight-content {
+            max-width: 600px;
+        }
+
+        .highlight-tag {
+            display: inline-block;
+            background: #e50914;
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .highlight-title {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .highlight-description {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .highlight-meta {
+            display: flex;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .watch-now-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .watch-now-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .highlights-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .highlight-card.large {
+                aspect-ratio: 16/9;
+            }
+
+            .highlight-title {
+                font-size: 1.4rem;
+            }
+
+            .highlight-description {
+                font-size: 0.9rem;
+            }
+        }
+
+        .section-nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-arrow {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .nav-arrow:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .movie-grid {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
+        .movie-grid::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .movie-card {
+            flex: 0 0 200px; /* Fixed width for cards */
+        }
+    </style>
+</head>
+<body>
+    <!-- Add the missing video player container -->
+    <div id="videoPlayerFullscreen" class="video-player-fullscreen">
+        <button id="closeButton" class="close-button">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
+        <video id="fullscreenVideo" class="video-js">
+            Your browser does not support the video tag.
+        </video>
+        <div id="videoControls" class="video-controls">
+            <button id="playPauseButton" class="control-button">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+            <span id="timeDisplay" class="time-display">0:00 / 0:00</span>
+            <div id="progressBar" class="progress-bar">
+                <div id="progress" class="progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <img src="Gemini_Generated_Image_.jpeg" alt="NextVerse" class="logo">
+            <ul class="nav-links">
+                <li><a href="next_page.html" class="nav-button">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Home</span>
+                </a></li>
+                <li><a href="movies.html" class="nav-button active">
+                    <span class="nav-icon">🎬</span>
+                    <span class="nav-text">Movies</span>
+                </a></li>
+                <li><a href="anime.html" class="nav-button">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-text">Anime</span>
+                </a></li>
+                <li><a href="#" class="nav-button">
+                    <span class="nav-icon"></span>
+                    <span class="nav-text">Sports</span>
+                </a></li>
+            </ul>
+        </div>
+
+        <div class="nav-right">
+            <div class="search-container">
+                <input type="text" class="search-bar" placeholder="Search">
+                <button class="search-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                </button>
+            </div>
+            <button class="subscribe-button">
+                Subscribe <span class="star-icon">★</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <video class="hero-video" id="heroVideo" autoplay loop muted 
+               poster="Oppenheimer-Christopher-Nolan.jpg">
+            <source src="Oppenheimer ｜ New Trailer.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-overlay">
+            <div class="hero-content">
+                <h1 class="hero-title">Oppenheimer</h1>
+                <p class="hero-description">
+                    The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.
+                </p>
+                <div class="hero-buttons">
+                    <button class="play-button" id="playButton" onclick="document.getElementById('videoPlayerFullscreen').style.display='block'; document.getElementById('fullscreenVideo').play();">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Play
+                    </button>
+                    <button class="more-info-button">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                        </svg>
+                        More Info
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trending Section -->
+    <section class="trending-section" style="margin-top: -100px; position: relative; z-index: 2;">
+        <h2 class="section-title">Trending Now</h2>
+        <div class="trending-slider">
+            <!-- Movie 1 -->
+            <div class="trending-slide">
+                <div class="number">1</div>
+                <div class="trending-card" onclick="playVideo('oppenheimer-wide.jpg', 'Oppenheimer')">
+                    <img src="Oppenheimer-Christopher-Nolan.jpg" alt="Oppenheimer" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Oppenheimer</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>3h 0m</span>
+                            <span>Drama</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 2 -->
+            <div class="trending-slide">
+                <div class="number">2</div>
+                <div class="trending-card" onclick="playVideo('poor-things-wide.jpg', 'Poor Things')">
+                    <img src="poor-things-movie-review-01.jpg" alt="Poor Things" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Poor Things</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>2h 21m</span>
+                            <span>Sci-Fi</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 3 -->
+            <div class="trending-slide">
+                <div class="number">3</div>
+                <div class="trending-card" onclick="playVideo('barbie-wide.jpg', 'Barbie')">
+                    <img src="Barbie-123.jpeg" alt="Barbie" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Barbie</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>1h 54m</span>
+                            <span>Comedy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 4 -->
+            <div class="trending-slide">
+                <div class="number">4</div>
+                <div class="trending-card" onclick="playVideo('killers-flower-moon-wide.jpg', 'Killers of the Flower Moon')">
+                    <img src="hq720 (1).jpg" alt="Killers of the Flower Moon" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Killers of the Flower Moon</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>3h 26m</span>
+                            <span>Crime</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 5 -->
+            <div class="trending-slide">
+                <div class="number">5</div>
+                <div class="trending-card" onclick="playVideo('saltburn-wide.jpg', 'Saltburn')">
+                    <img src="cumming-on-age.jpeg" alt="Saltburn" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Saltburn</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>2h 11m</span>
+                            <span>Thriller</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 6 -->
+            <div class="trending-slide">
+                <div class="number">6</div>
+                <div class="trending-card" onclick="playVideo('napoleon-wide.jpg', 'Napoleon')">
+                    <img src="images.jpeg" alt="Napoleon" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Napoleon</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>2h 38m</span>
+                            <span>Historical</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 7 -->
+            <div class="trending-slide">
+                <div class="number">7</div>
+                <div class="trending-card" onclick="playVideo('wonka-wide.jpg', 'Wonka')">
+                    <img src="True-detective.jpg" alt="Wonka" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">True Detective</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>S1 To S4</span>
+                            <span>Crime</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 8 -->
+            <div class="trending-slide">
+                <div class="number">8</div>
+                <div class="trending-card" onclick="playVideo('anyone-but-you-wide.jpg', 'Anyone But You')">
+                    <img src="Anyone-but-you.jpg" alt="Anyone But You" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Anyone But You</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>1h 43m</span>
+                            <span>Romance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 9 -->
+            <div class="trending-slide">
+                <div class="number">9</div>
+                <div class="trending-card" onclick="playVideo('mean-girls-wide.jpg', 'Mean Girls')">
+                    <img src="Fall-guy.jpg" alt="Mean Girls" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">The Fall Guy</h3>
+                        <div class="trending-meta">
+                            <span>2024</span>
+                            <span>1h 52m</span>
+                            <span>Action</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 10 -->
+            <div class="trending-slide">
+                <div class="number">10</div>
+                <div class="trending-card" onclick="playVideo('the-zone-of-interest-wide.jpg', 'The Zone of Interest')">
+                    <img src="Sonic-i mg.jpg" alt="The Zone of Interest" class="trending-thumbnail">
+                    <div class="trending-info">
+                        <h3 class="trending-title">Sonic The Hedgehog 3</h3>
+                        <div class="trending-meta">
+                            <span>2023</span>
+                            <span>1h 45m</span>
+                            <span>Action</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Category Navigation -->
+    <nav class="category-nav">
+        <ul class="category-list">
+            <li><a href="#trending" class="category-item active">Trending</a></li>
+            <li><a href="#action" class="category-item">Action</a></li>
+            <li><a href="#drama" class="category-item">Drama</a></li>
+            <li><a href="#comedy" class="category-item">Comedy</a></li>
+            <li><a href="#horror" class="category-item">Horror</a></li>
+            <li><a href="#thriller" class="category-item">Thriller</a></li>
+            <li><a href="#scifi" class="category-item">Sci-Fi</a></li>
+            <li><a href="#romance" class="category-item">Romance</a></li>
+        </ul>
+    </nav>
+
+    <!-- Movie Grid Sections -->
+    <section id="action" class="movie-grid-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Action Movies</h2>
+            <div class="section-nav">
+                <button class="nav-arrow prev" onclick="scrollMovies('action-movies', -1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button class="nav-arrow next" onclick="scrollMovies('action-movies', 1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 6L12 7.41 16.17 12l-4.17 4.59L10.59 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movie-grid" id="action-movies" style="display: flex; overflow-x: hidden; scroll-behavior: smooth; gap: 1.5rem;">
+            <!-- Action Movie 1 -->
+            <div class="movie-card">
+                <img src="mission.jpg" alt="Mission: Impossible - Dead Reckoning" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Mission: Impossible - Dead Reckoning</h3>
+                    <div class="movie-meta">2023 • 2h 43m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 2 -->
+            <div class="movie-card">
+                <img src="Equilizer-3.jpg" alt="The Equalizer 3" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">The Equalizer 3</h3>
+                    <div class="movie-meta">2023 • 1h 49m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 3 -->
+            <div class="movie-card">
+                <img src="images (2).jpeg" alt="Extraction 2" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Extraction 2</h3>
+                    <div class="movie-meta">2023 • 2h 3m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 4 -->
+            <div class="movie-card">
+                <img src="images (3).jpeg" alt="John Wick: Chapter 4" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">John Wick: Chapter 4</h3>
+                    <div class="movie-meta">2023 • 2h 49m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 5 -->
+            <div class="movie-card">
+                <img src="images (4).jpeg" alt="Indiana Jones and the Dial of Destiny" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Indiana Jones and the Dial of Destiny</h3>
+                    <div class="movie-meta">2023 • 2h 34m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 6 -->
+            <div class="movie-card">
+                <img src="Blue-beetle.jpg" alt="Blue Beetle" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Blue Beetle</h3>
+                    <div class="movie-meta">2023 • 2h 7m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 7 -->
+            <div class="movie-card">
+                <img src="GOTG.jpg" alt="Guardians of the Galaxy Vol. 3" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Guardians of the Galaxy Vol. 3</h3>
+                    <div class="movie-meta">2023 • 2h 30m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 8 -->
+            <div class="movie-card">
+                <img src="Fast-x.jpg" alt="Fast X" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Fast X</h3>
+                    <div class="movie-meta">2023 • 2h 21m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 9 -->
+            <div class="movie-card">
+                <img src="Transformers.jpg" alt="Transformers: Rise of the Beasts" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Transformers: Rise of the Beasts</h3>
+                    <div class="movie-meta">2023 • 2h 7m</div>
+                </div>
+            </div>
+
+            <!-- Action Movie 10 -->
+            <div class="movie-card">
+                <img src="Furiosa123.jpg" alt="Furiosa" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Furiosa</h3>
+                    <div class="movie-meta">2023 • 1h 45m</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Drama Section -->
+    <section id="drama" class="movie-grid-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Drama</h2>
+            <div class="section-nav">
+                <button class="nav-arrow prev" onclick="scrollMovies('drama-movies', -1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button class="nav-arrow next" onclick="scrollMovies('drama-movies', 1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 6L12 7.41 16.17 12l-4.17 4.59L10.59 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movie-grid" id="drama-movies" style="display: flex; overflow-x: hidden; scroll-behavior: smooth; gap: 1.5rem;">
+            <!-- Drama Movie 1 -->
+            <div class="movie-card">
+                <img src="Oppenheimer-Christopher-Nolan.jpg" alt="Oppenheimer" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Oppenheimer</h3>
+                    <div class="movie-meta">2023 • 3h 0m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 2 -->
+            <div class="movie-card">
+                <img src="cumming-on-age.jpeg" alt="Killers of the Flower Moon" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Killers of the Flower Moon</h3>
+                    <div class="movie-meta">2023 • 3h 26m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 3 -->
+            <div class="movie-card">
+                <img src="maestro-123.jpg" alt="Maestro" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Maestro</h3>
+                    <div class="movie-meta">2023 • 2h 9m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 4 -->
+            <div class="movie-card">
+                <img src="past-lives.jpg" alt="Past Lives" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Past Lives</h3>
+                    <div class="movie-meta">2023 • 1h 45m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 5 -->
+            <div class="movie-card">
+                <img src="Anatomy.jpg" alt="Anatomy of a Fall" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Anatomy of a Fall</h3>
+                    <div class="movie-meta">2023 • 2h 32m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 6 -->
+            <div class="movie-card">
+                <img src="May-dec.jpg" alt="May December" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">May December</h3>
+                    <div class="movie-meta">2023 • 1h 57m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 7 -->
+            <div class="movie-card">
+                <img src="Napoleon_Film_poster.jpg" alt="Napoleon" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Napoleon</h3>
+                    <div class="movie-meta">2023 • 2h 38m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 8 -->
+            <div class="movie-card">
+                <img src="RUSTIN_poster.jpg" alt="Rustin" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Rustin</h3>
+                    <div class="movie-meta">2023 • 1h 46m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 9 -->
+            <div class="movie-card">
+                <img src="The-zone-of-interest.jpg" alt="The Zone of Interest" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">The Zone of Interest</h3>
+                    <div class="movie-meta">2023 • 1h 45m</div>
+                </div>
+            </div>
+
+            <!-- Drama Movie 10 -->
+            <div class="movie-card">
+                <img src="Priscilla_poster.jpeg" alt="Priscilla" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Priscilla</h3>
+                    <div class="movie-meta">2023 • 1h 53m</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comedy Section -->
+    <section id="comedy" class="movie-grid-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Comedy</h2>
+            <div class="section-nav">
+                <button class="nav-arrow prev" onclick="scrollMovies('comedy-movies', -1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button class="nav-arrow next" onclick="scrollMovies('comedy-movies', 1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 6L12 7.41 16.17 12l-4.17 4.59L10.59 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movie-grid" id="comedy-movies" style="display: flex; overflow-x: hidden; scroll-behavior: smooth; gap: 1.5rem;">
+            <!-- Comedy Movie 1 -->
+            <div class="movie-card">
+                <img src="p13472534_p_v8_am.jpg" alt="Barbie" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Barbie</h3>
+                    <div class="movie-meta">2023 • 1h 54m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 2 -->
+            <div class="movie-card">
+                <img src="anyone-but-you.jpg" alt="Anyone But You" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Anyone But You</h3>
+                    <div class="movie-meta">2023 • 1h 43m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 3 -->
+            <div class="movie-card">
+                <img src="48b5d872-e4ca-42d0-bd44-4c3f3f6dd9a9.jpg" alt="Wonka" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Wonka</h3>
+                    <div class="movie-meta">2023 • 1h 56m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 4 -->
+            <div class="movie-card">
+                <img src="71YvMLOZ8mL._AC_UF1000,1000_QL80_.jpg" alt="Asteroid City" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Asteroid City</h3>
+                    <div class="movie-meta">2023 • 1h 45m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 5 -->
+            <div class="movie-card">
+                <img src="MV5BZjk1NmZiNzYtZGUyYi00YzEwLTgwNWQtM2VmOWFmMGIwZDM2XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg" alt="No Hard Feelings" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">No Hard Feelings</h3>
+                    <div class="movie-meta">2023 • 1h 43m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 6 -->
+            <div class="movie-card">
+                <img src="ddd1234.jpg" alt="Dungeons & Dragons: Honor Among Thieves" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Dungeons & Dragons: Honor Among Thieves</h3>
+                    <div class="movie-meta">2023 • 2h 14m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 7 -->
+            <div class="movie-card">
+                <img src="you-people.jpg" alt="You People" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">You People</h3>
+                    <div class="movie-meta">2023 • 1h 57m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 8 -->
+            <div class="movie-card">
+                <img src="Shotgun_Wedding_2022_poster.jpg" alt="Shotgun Wedding" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Shotgun Wedding</h3>
+                    <div class="movie-meta">2023 • 1h 40m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 9 -->
+            <div class="movie-card">
+                <img src="hangover.jpg" alt="Paint" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Hangover</h3>
+                    <div class="movie-meta">2023 • 1h 36m</div>
+                </div>
+            </div>
+
+            <!-- Comedy Movie 10 -->
+            <div class="movie-card">
+                <img src="Kick-ass.jpg" alt="Family Switch" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Kick-ass</h3>
+                    <div class="movie-meta">2010 • 1h 57m</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Horror Section -->
+    <section id="horror" class="movie-grid-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Horror</h2>
+            <div class="section-nav">
+                <button class="nav-arrow prev" onclick="scrollMovies('horror-movies', -1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button class="nav-arrow next" onclick="scrollMovies('horror-movies', 1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 6L12 7.41 16.17 12l-4.17 4.59L10.59 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movie-grid" id="horror-movies" style="display: flex; overflow-x: hidden; scroll-behavior: smooth; gap: 1.5rem;">
+            <!-- Horror Movie 1 -->
+            <div class="movie-card">
+                <img src="61bFjffAAiL._AC_UF894,1000_QL80_.jpg" alt="Evil Dead Rise" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Evil Dead Rise</h3>
+                    <div class="movie-meta">2023 • 1h 36m</div>
+                </div>
+            </div>
+
+            <!-- Horror Movie 2 -->
+            <div class="movie-card">
+                <img src="M3GAN_Poster.jpeg" alt="M3GAN" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">M3GAN</h3>
+                    <div class="movie-meta">2023 • 1h 42m</div>
+                </div>
+            </div>
+
+            <!-- Horror Movie 3 -->
+            <div class="movie-card">
+                <img src="Scream6.jpg" alt="Scream VI" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Scream VI</h3>
+                    <div class="movie-meta">2023 • 2h 2m</div>
+                </div>
+            </div>
+
+            <!-- Horror Movie 4 -->
+            <div class="movie-card">
+                <img src="a0c93260777239.5a58a635ccb2f.jpg" alt="Insidious: The Red Door" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Insidious: The Red Door</h3>
+                    <div class="movie-meta">2023 • 1h 47m</div>
+                </div>
+            </div>
+
+            <!-- Horror Movie 5 -->
+            <div class="movie-card">
+                <img src="65036da2202cdb2898409ac3-renfield-dvd.jpg" alt="Renfield" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Renfield</h3>
+                    <div class="movie-meta">2023 • 1h 33m</div>
+                </div>
+            </div>
+
+            <!-- Horror Movie 6 -->
+            <div class="movie-card">
+                <img src="Infinity.jpg" alt="Infinity Pool" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Infinity Pool</h3>
+                    <div class="movie-meta">2023 • 1h 57m</div>
+                </div>
+            </div>
+
+            <!-- Horror Movie 7 (New) -->
+            <div class="movie-card">
+                <img src="zjLpFWqcEK3hAI9NpZPXUXuUxvd-683x1024.jpg" alt="Talk to Me" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Talk to Me</h3>
+                    <div class="movie-meta">2023 • 1h 35m</div>
+                </div>
+            </div>
+
+            <!-- Horror Movie 8 (New) -->
+            <div class="movie-card">
+                <img src="fnafposter-758x1200.jpg" alt="Five Nights at Freddy's" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Five Nights at Freddy's</h3>
+                    <div class="movie-meta">2023 • 1h 49m</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Thriller Section -->
+    <section id="thriller" class="movie-grid-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Thriller</h2>
+            <div class="section-nav">
+                <button class="nav-arrow prev" onclick="scrollMovies('thriller-movies', -1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button class="nav-arrow next" onclick="scrollMovies('thriller-movies', 1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 6L12 7.41 16.17 12l-4.17 4.59L10.59 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movie-grid" id="thriller-movies" style="display: flex; overflow-x: hidden; scroll-behavior: smooth; gap: 1.5rem;">
+            <!-- Thriller Movie 1 -->
+            <div class="movie-card">
+                <img src="llllll1234567.jpg" alt="Leave the World Behind" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Leave the World Behind</h3>
+                    <div class="movie-meta">2023 • 2h 18m</div>
+                </div>
+            </div>
+
+            <!-- Thriller Movie 2 -->
+            <div class="movie-card">
+                <img src="Knock123.jpg" alt="Knock at the Cabin" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Knock at the Cabin</h3>
+                    <div class="movie-meta">2023 • 1h 40m</div>
+                </div>
+            </div>
+
+            <!-- Thriller Movie 3 -->
+            <div class="movie-card">
+                <img src="The-Movie-Spoiler.jpg" alt="Missing" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Missing</h3>
+                    <div class="movie-meta">2023 • 1h 51m</div>
+                </div>
+            </div>
+
+            <!-- Thriller Movie 4 -->
+            <div class="movie-card">
+                <img src="hypnotic.jpg" alt="Hypnotic" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Hypnotic</h3>
+                    <div class="movie-meta">2023 • 1h 33m</div>
+                </div>
+            </div>
+
+            <!-- Thriller Movie 5 -->
+            <div class="movie-card">
+                <img src="65-million.jpg" alt="65" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">65</h3>
+                    <div class="movie-meta">2023 • 1h 33m</div>
+                </div>
+            </div>
+
+            <!-- Thriller Movie 6 -->
+            <div class="movie-card">
+                <img src="MV5BMDBlZDQ2NzYtNDU4Ny00MjZkLTk0YjctODg2NGZkODkwY2I1XkEyXkFqcGc@._V1_.jpg" alt="They Cloned Tyrone" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">They Cloned Tyrone</h3>
+                    <div class="movie-meta">2023 • 2h 2m</div>
+                </div>
+            </div>
+
+            <!-- Thriller Movie 7 -->
+            <div class="movie-card">
+                <img src="the-killer.jpg" alt="The Killer" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">The Killer</h3>
+                    <div class="movie-meta">2023 • 1h 58m</div>
+                </div>
+            </div>
+
+            <!-- Thriller Movie 8 -->
+            <div class="movie-card">
+                <img src="reptile.jpg" alt="Reptile" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Reptile</h3>
+                    <div class="movie-meta">2023 • 2h 16m</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Sci-Fi Section -->
+    <section id="scifi" class="movie-grid-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Sci-Fi</h2>
+            <div class="section-nav">
+                <button class="nav-arrow prev" onclick="scrollMovies('scifi-movies', -1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button class="nav-arrow next" onclick="scrollMovies('scifi-movies', 1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 6L12 7.41 16.17 12l-4.17 4.59L10.59 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movie-grid" id="scifi-movies" style="display: flex; overflow-x: hidden; scroll-behavior: smooth; gap: 1.5rem;">
+            <!-- Sci-Fi Movie 1 -->
+            <div class="movie-card">
+                <img src="poor-things-movie-review-01.jpg" alt="Poor Things" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Poor Things</h3>
+                    <div class="movie-meta">2023 • 2h 21m</div>
+                </div>
+            </div>
+
+            <!-- Sci-Fi Movie 2 -->
+            <div class="movie-card">
+                <img src="65-million.jpg" alt="65" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">65</h3>
+                    <div class="movie-meta">2023 • 1h 33m</div>
+                </div>
+            </div>
+
+            <!-- Sci-Fi Movie 3 -->
+            <div class="movie-card">
+                <img src="MV5BMDBlZDQ2NzYtNDU4Ny00MjZkLTk0YjctODg2NGZkODkwY2I1XkEyXkFqcGc@._V1_.jpg" alt="They Cloned Tyrone" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">They Cloned Tyrone</h3>
+                    <div class="movie-meta">2023 • 2h 2m</div>
+                </div>
+            </div>
+
+            <!-- Sci-Fi Movie 4 -->
+            <div class="movie-card">
+                <img src="GOTG.jpg" alt="Guardians of the Galaxy Vol. 3" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Guardians of the Galaxy Vol. 3</h3>
+                    <div class="movie-meta">2023 • 2h 30m</div>
+                </div>
+            </div>
+
+            <!-- Sci-Fi Movie 5 -->
+            <div class="movie-card">
+                <img src="Transformers.jpg" alt="Transformers: Rise of the Beasts" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Transformers: Rise of the Beasts</h3>
+                    <div class="movie-meta">2023 • 2h 7m</div>
+                </div>
+            </div>
+
+            <!-- Sci-Fi Movie 6 -->
+            <div class="movie-card">
+                <img src="Blue-beetle.jpg" alt="Blue Beetle" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Blue Beetle</h3>
+                    <div class="movie-meta">2023 • 2h 7m</div>
+                </div>
+            </div>
+
+            <!-- Sci-Fi Movie 7 -->
+            <div class="movie-card">
+                <img src="Ant-man.jpg" alt="Ant-Man and the Wasp: Quantumania" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Ant-Man and the Wasp: Quantumania</h3>
+                    <div class="movie-meta">2023 • 2h 4m</div>
+                </div>
+            </div>
+
+            <!-- Sci-Fi Movie 8 -->
+            <div class="movie-card">
+                <img src="The-creator.jpg" alt="The Creator" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">The Creator</h3>
+                    <div class="movie-meta">2023 • 2h 13m</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Romance Section -->
+    <section id="romance" class="movie-grid-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Romance</h2>
+            <div class="section-nav">
+                <button class="nav-arrow prev" onclick="scrollMovies('romance-movies', -1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button class="nav-arrow next" onclick="scrollMovies('romance-movies', 1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 6L12 7.41 16.17 12l-4.17 4.59L10.59 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movie-grid" id="romance-movies" style="display: flex; overflow-x: hidden; scroll-behavior: smooth; gap: 1.5rem;">
+            <!-- Romance Movie 1 -->
+            <div class="movie-card">
+                <img src="anyone-but-you.jpg" alt="Anyone But You" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Anyone But You</h3>
+                    <div class="movie-meta">2023 • 1h 43m</div>
+                </div>
+            </div>
+
+            <!-- Romance Movie 2 -->
+            <div class="movie-card">
+                <img src="love-at-first-sight.jpg" alt="Love at First Sight" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Love at First Sight</h3>
+                    <div class="movie-meta">2023 • 1h 31m</div>
+                </div>
+            </div>
+
+            <!-- Romance Movie 3 -->
+            <div class="movie-card">
+                <img src="your-place-or-mine.jpg" alt="Your Place or Mine" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Your Place or Mine</h3>
+                    <div class="movie-meta">2023 • 1h 51m</div>
+                </div>
+            </div>
+
+            <!-- Romance Movie 4 -->
+            <div class="movie-card">
+                <img src="through-my-window-3.jpg" alt="Through My Window 3" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Through My Window 3</h3>
+                    <div class="movie-meta">2023 • 1h 50m</div>
+                </div>
+            </div>
+
+            <!-- Romance Movie 5 -->
+            <div class="movie-card">
+                <img src="red-white-royal-blue.jpg" alt="Red, White & Royal Blue" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Red, White & Royal Blue</h3>
+                    <div class="movie-meta">2023 • 1h 58m</div>
+                </div>
+            </div>
+
+            <!-- Romance Movie 6 -->
+            <div class="movie-card">
+                <img src="shotgun-wedding.jpg" alt="Shotgun Wedding" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Shotgun Wedding</h3>
+                    <div class="movie-meta">2023 • 1h 40m</div>
+                </div>
+            </div>
+
+            <!-- Romance Movie 7 -->
+            <div class="movie-card">
+                <img src="happiness-for-beginners.jpg" alt="Happiness for Beginners" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Happiness for Beginners</h3>
+                    <div class="movie-meta">2023 • 1h 43m</div>
+                </div>
+            </div>
+
+            <!-- Romance Movie 8 -->
+            <div class="movie-card">
+                <img src="love-again.jpg" alt="Love Again" class="movie-poster">
+                <div class="movie-info">
+                    <h3 class="movie-title">Love Again</h3>
+                    <div class="movie-meta">2023 • 1h 44m</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="background: #1a1a1a; padding: 40px 0; margin-top: 60px;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;">
+                <!-- Column 1 -->
+                <div>
+                    <h3 style="color: white; margin-bottom: 20px;">NextVerse</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">For You</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Sports</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Movies</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">TV Shows</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 2 -->
+                <div>
+                    <h3 style="color: white; margin-bottom: 20px;">Support</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Help Center</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Terms of Use</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Privacy Policy</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Content Complaints</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3 -->
+                <div>
+                    <h3 style="color: white; margin-bottom: 20px;">Connect With Us</h3>
+                    <div style="display: flex; gap: 15px;">
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Facebook.jpg" alt="Facebook" style="width: 20px; height: 20px;">
+                        </a>
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Twitter-x-logo.png" alt="Twitter" style="width: 20px; height: 20px;">
+                        </a>
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Instagram.png" alt="Instagram" style="width: 20px; height: 20px;">
+                        </a>
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Youtube-text-area-line.png" alt="YouTube" style="width: 20px; height: 20px;">
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copyright -->
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #333;">
+                <p style="color: #666; font-size: 14px;">Copyright © NextVerse Private Limited, 2024. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Genre selection
+        const genreItems = document.querySelectorAll('.genre-item');
+        genreItems.forEach(item => {
+            item.addEventListener('click', () => {
+                genreItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                // Add filtering logic here
+            });
+        });
+
+        // Movie card click handler
+        const movieCards = document.querySelectorAll('.movie-card');
+        movieCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Add movie details modal or navigation logic here
+                console.log('Movie clicked:', card.querySelector('.movie-title').textContent);
+            });
+        });
+
+        // Category navigation highlighting
+        const categoryItems = document.querySelectorAll('.category-item');
+        categoryItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                categoryItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Smooth scrolling for category links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const slider = document.querySelector('.trending-slider');
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true;
+                slider.classList.add('active');
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+            });
+
+            slider.addEventListener('mouseleave', () => {
+                isDown = false;
+                slider.classList.remove('active');
+            });
+
+            slider.addEventListener('mouseup', () => {
+                isDown = false;
+                slider.classList.remove('active');
+            });
+
+            slider.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - slider.offsetLeft;
+                const walk = (x - startX) * 2;
+                slider.scrollLeft = scrollLeft - walk;
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('heroVideo');
+            const playButton = document.getElementById('playButton');
+            
+            playButton.addEventListener('click', function() {
+                if (video.paused) {
+                    video.muted = false;
+                    video.play();
+                    playButton.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                        </svg>
+                        Pause
+                    `;
+                } else {
+                    video.pause();
+                    playButton.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Play
+                    `;
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const heroVideo = document.getElementById('heroVideo');
+            const playButton = document.getElementById('playButton');
+            const videoPlayer = document.getElementById('videoPlayerFullscreen');
+            const fullscreenVideo = document.getElementById('fullscreenVideo');
+            const closeButton = document.getElementById('closeButton');
+            const playPauseButton = document.getElementById('playPauseButton');
+            const videoControls = document.getElementById('videoControls');
+            const progressBar = document.getElementById('progressBar');
+            const progress = document.getElementById('progress');
+            const timeDisplay = document.getElementById('timeDisplay');
+            
+            let controlsTimeout;
+
+            playButton.addEventListener('click', function() {
+                videoPlayer.style.display = 'block';
+                fullscreenVideo.currentTime = heroVideo.currentTime;
+                fullscreenVideo.play();
+                document.body.style.overflow = 'hidden';
+            });
+
+            closeButton.addEventListener('click', function() {
+                videoPlayer.style.display = 'none';
+                fullscreenVideo.pause();
+                document.body.style.overflow = '';
+            });
+
+            playPauseButton.addEventListener('click', function() {
+                if (fullscreenVideo.paused) {
+                    fullscreenVideo.play();
+                    playPauseButton.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                        </svg>
+                    `;
+                } else {
+                    fullscreenVideo.pause();
+                    playPauseButton.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Play
+                    `;
+                }
+            });
+
+            // Show/hide controls on mouse move
+            videoPlayer.addEventListener('mousemove', function() {
+                videoControls.classList.remove('hidden');
+                clearTimeout(controlsTimeout);
+                controlsTimeout = setTimeout(() => {
+                    if (!fullscreenVideo.paused) {
+                        videoControls.classList.add('hidden');
+                    }
+                }, 3000);
+            });
+
+            // Update progress bar
+            fullscreenVideo.addEventListener('timeupdate', function() {
+                const percentage = (fullscreenVideo.currentTime / fullscreenVideo.duration) * 100;
+                progress.style.width = percentage + '%';
+                
+                // Update time display
+                const currentMinutes = Math.floor(fullscreenVideo.currentTime / 60);
+                const currentSeconds = Math.floor(fullscreenVideo.currentTime % 60);
+                const totalMinutes = Math.floor(fullscreenVideo.duration / 60);
+                const totalSeconds = Math.floor(fullscreenVideo.duration % 60);
+                
+                timeDisplay.textContent = `${currentMinutes}:${currentSeconds.toString().padStart(2, '0')} / ${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+            });
+
+            // Click on progress bar to seek
+            progressBar.addEventListener('click', function(e) {
+                const rect = progressBar.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                fullscreenVideo.currentTime = pos * fullscreenVideo.duration;
+            });
+
+            // Handle ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && videoPlayer.style.display === 'block') {
+                    closeButton.click();
+                }
+            });
+
+            // Add these buttons to the video controls div
+            videoControls.insertAdjacentHTML('beforeend', `
+                <button class="control-button" id="backButton">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+                    </svg>
+                </button>
+                <button class="control-button" id="forwardButton">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M4 18l8.5-6L4 6v12zm9.5-6l8.5-6v12l-8.5-6z"/>
+                    </svg>
+                </button>
+            `);
+
+            // Add event listeners for the skip buttons
+            document.getElementById('backButton').addEventListener('click', () => {
+                fullscreenVideo.currentTime = Math.max(0, fullscreenVideo.currentTime - 10);
+            });
+
+            document.getElementById('forwardButton').addEventListener('click', () => {
+                fullscreenVideo.currentTime = Math.min(fullscreenVideo.duration, fullscreenVideo.currentTime + 10);
+            });
+
+            // Add keyboard shortcuts for skipping
+            document.addEventListener('keydown', function(e) {
+                if (videoPlayer.style.display === 'block') {
+                    if (e.key === 'ArrowLeft') {
+                        fullscreenVideo.currentTime = Math.max(0, fullscreenVideo.currentTime - 10);
+                    } else if (e.key === 'ArrowRight') {
+                        fullscreenVideo.currentTime = Math.min(fullscreenVideo.duration, fullscreenVideo.currentTime + 10);
+                    }
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const heroVideo = document.getElementById('heroVideo');
+            
+            // Set preview duration (in seconds)
+            const previewDuration = 30;
+            
+            heroVideo.addEventListener('timeupdate', function() {
+                if (heroVideo.currentTime >= previewDuration) {
+                    heroVideo.currentTime = 0; // Reset to beginning
+                }
+            });
+
+            // Optional: Fade out volume near the end of preview
+            heroVideo.addEventListener('timeupdate', function() {
+                if (heroVideo.currentTime >= previewDuration - 2) {
+                    heroVideo.volume = (previewDuration - heroVideo.currentTime) / 2;
+                }
+            });
+        });
+
+        function playVideo(videoSrc, title) {
+            const videoPlayer = document.getElementById('videoPlayerFullscreen');
+            const fullscreenVideo = document.getElementById('fullscreenVideo');
+            
+            // Update video source
+            fullscreenVideo.innerHTML = `<source src="${videoSrc}" type="video/mp4">`;
+            fullscreenVideo.load(); // Force reload of video
+            
+            // Show player and play video
+            videoPlayer.style.display = 'block';
+            fullscreenVideo.play()
+                .catch(e => console.log("Error playing video:", e));
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Add click handlers to all trending cards
+        document.querySelectorAll('.trending-card').forEach(card => {
+            card.style.cursor = 'pointer';
+        });
+
+        function scrollMovies(containerId, direction) {
+            const container = document.getElementById(containerId);
+            const scrollAmount = direction * (container.offsetWidth * 0.8); // Scroll 80% of container width
+            container.scrollBy({
+                left: scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+
+        // Optional: Add scroll position monitoring to disable buttons at ends
+        document.querySelectorAll('.movie-grid').forEach(grid => {
+            grid.addEventListener('scroll', () => {
+                const prevButton = grid.parentElement.querySelector('.prev');
+                const nextButton = grid.parentElement.querySelector('.next');
+                
+                // Disable prev button if at start
+                prevButton.disabled = grid.scrollLeft <= 0;
+                
+                // Disable next button if at end
+                nextButton.disabled = grid.scrollLeft >= grid.scrollWidth - grid.clientWidth - 1;
+            });
+        });
+    </script>
+</body>
+</html>

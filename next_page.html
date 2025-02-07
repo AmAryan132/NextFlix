@@ -1,0 +1,3910 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Streaming Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <style>
+        /* Base styles (shared between desktop and mobile) */
+        :root {
+            --content-padding: clamp(1rem, 4vw, 4rem);
+            --card-width: clamp(260px, 30vw, 320px);
+            --card-height: clamp(146px, 16.875vw, 180px);
+            --title-size: clamp(1.5rem, 2.5vw, 2.5rem);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background: #0f0f1a;
+            color: white;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: linear-gradient(to bottom, 
+                rgba(0, 0, 0, 0.7) 0%,
+                rgba(0, 0, 0, 0.3) 60%,
+                transparent 100%);
+            z-index: 1000;
+            transition: background 0.3s ease;
+        }
+
+        /* Add this for better text readability when scrolling */
+        .navbar.scrolled {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #2196f3;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 0.5rem 2.5rem 0.5rem 1rem;
+            color: white;
+            width: 200px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .search-bar::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-bar:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .search-button {
+            position: absolute;
+            right: 8px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .subscribe-button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .subscribe-button:hover {
+            background: #1976d2;
+            transform: translateY(-1px);
+        }
+
+        .star-icon {
+            font-size: 1rem;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 0.5rem;
+            background: rgba(20, 20, 20, 0.95);
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .search-result-item {
+            padding: 0.8rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            color: white;
+        }
+
+        .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .search-result-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-title {
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .result-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Scrollbar styling */
+        .search-results::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .search-results::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .search-results::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .hero-section {
+            height: clamp(60vh, 85vh, 90vh);
+            position: relative;
+            overflow: hidden;
+            background: #000; /* Fallback color */
+        }
+
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, transparent 50%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .hero-section video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.7);
+            background: #000; /* Fallback color */
+        }
+
+        .hero-content {
+            position: absolute;
+            bottom: 15%;
+            left: var(--content-padding);
+            max-width: min(600px, 90%);
+            z-index: 2;
+            color: #fff;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255,255,255,0.9);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .live-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+
+        .match-info {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .hero-title {
+            font-size: var(--title-size);
+            margin-bottom: clamp(0.5rem, 1vw, 1rem);
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .hero-description {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .watch-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.9);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .watch-button:hover {
+            background: #fff;
+            transform: scale(1.05);
+        }
+
+        .watch-button:active {
+            transform: scale(0.98);
+        }
+
+        .quality-badge {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(0,0,0,0.5);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .thumbnail-row {
+            position: absolute;
+            bottom: 2rem;
+            right: 4rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 1;
+        }
+
+        .thumbnail {
+            width: 200px;
+            height: 112px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .thumbnail.active {
+            border-color: #1f80e0;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-modal.active {
+            opacity: 1;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;  /* Add some padding around the video */
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 2rem;
+            top: 2rem;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 1001;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #fullVideo {
+            max-width: 90%;
+            max-height: calc(90vh - 4rem);  /* Account for padding */
+            width: 100%;
+            aspect-ratio: 16/9;  /* Force 16:9 aspect ratio */
+            background: #000;
+        }
+
+        /* Content Row Styles */
+        .content-row {
+            margin: 2rem 0;
+            padding: 0 4rem;
+            position: relative;
+        }
+
+        .row-header {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        /* Card Layout and Slider */
+        .content-slider {
+            display: flex;
+            padding: 20px 0;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+        }
+
+        .content-card {
+            position: relative;
+            width: 300px;  /* Base width */
+            height: 169px;  /* 16:9 aspect ratio */
+            border-radius: 4px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .content-card:hover {
+            transform: scale(1.05);
+        }
+
+        /* Video Container within Card */
+        .video-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .content-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Card Overlay */
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+        }
+
+        .card-meta {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-title {
+            color: white;
+            font-size: 1rem;
+            margin: 0;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        /* Slider Navigation Arrows */
+        .slider-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 10;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .slider-arrow:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .slider-arrow.left {
+            left: 2rem;
+        }
+
+        .slider-arrow.right {
+            right: 2rem;
+        }
+
+        /* Play Icon */
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .content-card:hover .play-icon {
+            opacity: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .content-card {
+                width: 240px;
+                height: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content-row {
+                padding: 0 1rem;
+            }
+
+            .content-card {
+                width: 260px;
+                height: 146px;  /* Maintains 16:9 ratio */
+            }
+
+            .slider-arrow {
+                width: 32px;
+                height: 32px;
+                font-size: 20px;
+            }
+
+            .slider-arrow.left {
+                left: 0.5rem;
+            }
+
+            .slider-arrow.right {
+                right: 0.5rem;
+            }
+
+            .row-header {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Touch Device Optimizations */
+        @media (hover: none) {
+            .content-card:hover {
+                transform: none;
+            }
+
+            .play-icon {
+                opacity: 1;
+            }
+        }
+
+        /* Video Controls */
+        .custom-video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .content-card:hover .custom-video-controls {
+            opacity: 1;
+        }
+
+        /* Loading State */
+        .content-card.loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .live-indicator, .upcoming-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 2;
+        }
+
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .categories {
+            display: flex;
+            gap: 1rem;
+            padding: 0 4rem;
+            margin-top: 1rem;
+        }
+
+        .category-pill {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .category-pill:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .category-pill.active {
+            background: #1f80e0;
+        }
+
+        /* Quality Button Styles */
+        .custom-controls {
+            position: absolute;
+            bottom: 40px;
+            right: 20px;
+            z-index: 2001;
+        }
+
+        .quality-btn {
+            background: rgba(28, 28, 28, 0.9);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .quality-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+        }
+
+        .current-quality::after {
+            content: "▼";
+            margin-left: 5px;
+            font-size: 10px;
+        }
+
+        .quality-menu {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: rgba(28, 28, 28, 0.9);
+            border-radius: 4px;
+            padding: 5px 0;
+            margin-bottom: 5px;
+            min-width: 100px;
+        }
+
+        .quality-btn:hover .quality-menu {
+            display: block;
+        }
+
+        .quality-option {
+            padding: 8px 15px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .quality-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .quality-option.active {
+            color: #1f80e0;
+        }
+
+        /* Video.js custom styles */
+        .video-js {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .vjs-quality-menu {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: rgba(28, 28, 28, 0.9);
+            border-radius: 4px;
+            display: none;
+        }
+
+        .vjs-quality-option {
+            padding: 8px 15px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .vjs-quality-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content-row {
+                padding: 0 2rem;
+                margin: 2rem 0;
+            }
+
+            .content-card {
+                width: 360px;  /* Adjusted width for mobile */
+                height: 160px;  /* Adjusted height for mobile while maintaining rectangular shape */
+            }
+            
+            .card-title {
+                font-size: 1rem;
+            }
+
+            .slider-arrow {
+                width: 36px;
+                height: 36px;
+                font-size: 20px;
+            }
+
+            .slider-arrow.left {
+                left: 0.5rem;
+            }
+
+            .slider-arrow.right {
+                right: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-section {
+                height: 70vh;
+            }
+        }
+
+        .subscribe-button {
+            background: linear-gradient(135deg, #1f80e0 0%, #2196f3 100%);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(31, 128, 224, 0.3);
+        }
+
+        .subscribe-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .subscribe-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(31, 128, 224, 0.4);
+        }
+
+        .subscribe-button:hover::before {
+            left: 100%;
+        }
+
+        .subscribe-button:active {
+            transform: translateY(0);
+        }
+
+        .button-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        .crown-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+
+        .subscribe-button:hover .crown-icon {
+            transform: rotate(180deg);
+        }
+
+        @media (max-width: 768px) {
+            .subscribe-button {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Responsive Navigation */
+        @media (max-width: 768px) {
+            .nav-links {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                right: 0;
+                background: rgba(0,0,0,0.95);
+                padding: 1rem;
+                transform: translateY(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .nav-links.active {
+                transform: translateY(0);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        /* Touch Device Optimizations */
+        @media (hover: none) {
+            .content-card:hover {
+                transform: none;
+            }
+
+            .play-icon {
+                opacity: 1;
+            }
+        }
+
+        /* Landscape Mode */
+        @media (orientation: landscape) and (max-height: 480px) {
+            .hero-section {
+                height: 100vh;
+            }
+
+            .hero-content {
+                bottom: 10%;
+            }
+        }
+
+        /* High-resolution Screens */
+        @media (min-width: 1440px) {
+            :root {
+                --content-padding: 6rem;
+                --card-width: 360px;
+                --card-height: 202.5px;
+            }
+        }
+
+        /* Add these styles */
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 1600px;  /* Increased max-width for better widescreen display */
+            margin: 0 auto;
+            padding-bottom: 56.25%;  /* This creates 16:9 aspect ratio (9/16 = 0.5625) */
+            height: 0;
+            overflow: hidden;
+        }
+
+        .video-container video,
+        .video-container #fullVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .custom-video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .video-container:hover .custom-video-controls {
+            opacity: 1;
+        }
+
+        .timeline-container {
+            width: 100%;
+            height: 4px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .timeline {
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.2);
+            position: relative;
+            border-radius: 2px;
+        }
+
+        .progress-bar {
+            position: absolute;
+            height: 100%;
+            background: #ff0000;
+            border-radius: 2px;
+            width: 0;
+        }
+
+        .controls-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .left-controls, .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .volume-progress {
+            position: absolute;
+            height: 100%;
+            background: white;
+            border-radius: 2px;
+            width: 100%;
+        }
+
+        .time-display {
+            color: white;
+            font-size: 14px;
+            margin-left: 12px;
+        }
+
+        .time-separator {
+            margin: 0 4px;
+            opacity: 0.7;
+        }
+
+        /* Add these styles */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .content-card .custom-video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 2;
+        }
+
+        .content-card:hover .custom-video-controls {
+            opacity: 1;
+        }
+
+        .content-card .timeline-container {
+            width: 100%;
+            height: 3px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .content-card .timeline {
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.2);
+            position: relative;
+            border-radius: 1.5px;
+        }
+
+        .content-card .progress-bar {
+            position: absolute;
+            height: 100%;
+            background: #ff0000;
+            border-radius: 1.5px;
+            width: 0;
+        }
+
+        .content-card .controls-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-card .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .content-card .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 3px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            opacity: 0.9;
+        }
+
+        .content-card .control-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .content-card .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .content-card .volume-slider {
+            width: 60px;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 1.5px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .content-card .volume-progress {
+            position: absolute;
+            height: 100%;
+            background: white;
+            border-radius: 1.5px;
+            width: 100%;
+        }
+
+        .content-card .time-display {
+            color: white;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .content-card .time-separator {
+            margin: 0 2px;
+            opacity: 0.7;
+        }
+
+        /* Adjust card overlay to work with controls */
+        .content-card .card-overlay {
+            padding-bottom: 60px;
+        }
+
+        @media (max-width: 768px) {
+            .content-card .custom-video-controls {
+                padding: 8px;
+            }
+            
+            .content-card .time-display {
+                font-size: 10px;
+            }
+            
+            .content-card .volume-slider {
+                width: 40px;
+            }
+        }
+    </style>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.15.0/videojs-contrib-hls.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <img src="Gemini_Generated_Image_.jpeg" alt="NextVerse" class="logo">
+            <ul class="nav-links">
+                <li><a href="next_page.html" class="nav-button active">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Home</span>
+                </a></li>
+                <li><a href="movies.html" class="nav-button">
+                    <span class="nav-icon">🎬</span>
+                    <span class="nav-text">Movies</span>
+                </a></li>
+                <li><a href="anime.html" class="nav-button">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-text">Anime</span>
+                </a></li>
+                <li><a href="#" class="nav-button">
+                    <span class="nav-icon">🏏</span>
+                    <span class="nav-text">Cricket</span>
+                </a></li>
+                <li><a href="#" class="nav-button">
+                    <span class="nav-icon">⚽</span>
+                    <span class="nav-text">Football</span>
+                </a></li>
+            </ul>
+        </div>
+        <div class="nav-right">
+            <div class="search-container">
+                <input type="search" placeholder="Search" class="search-bar">
+                <button class="search-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+            </div>
+            <button class="subscribe-button">
+                Subscribe <span class="star-icon">★</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="hero-section">
+        <video 
+            id="previewVideo" 
+            autoplay 
+            muted 
+            loop 
+            playsinline
+            poster="cricket_thumbnail.jpg"
+            preload="auto"
+        >
+            <source src="Woakes & Roy Send England To Final!  Australia vs England - Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-content">
+            <div class="match-info">ICC CRICKET WORLD CUP 2019 • Cricket</div>
+            <h1 class="hero-title">SEMIFINAL AUSTRALIA vs ENGLAND</h1>
+            <p class="hero-description">Watch the Highlights between Australia and England</p>
+            <button class="watch-button" id="watchNowBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                Watch Now
+            </button>
+        </div>
+    </div>
+
+    <div id="videoModal" class="video-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="video-container">
+                <video id="fullVideo">
+                    <source src="" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn prev-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <button class="control-btn next-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <path d="M6 6l8.5 6-8.5 6V6zm9 0h2v12h-2z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                        <div class="right-controls">
+                            <button class="control-btn quality-btn">
+                                <span class="current-quality">1080p</span>
+                            </button>
+                            <button class="control-btn fullscreen-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="categories">
+        <div class="category-pill active">All</div>
+        <div class="category-pill">Cricket</div>
+        <div class="category-pill">Movies</div>
+    </div>
+
+    <section class="content-row">
+        <h2 class="row-header">CRICKET</h2>
+        <div class="content-slider">
+            <!-- Cricket Card 1 -->
+            <div class="content-card">
+                <video muted loop poster="Rohitimg.jpg">
+                    <source src="Rohit Sharma Hits 140!  India v Pakistan - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4" type="video/mp4">
+                </video>
+                <div class="play-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">World Cup 2019 • Cricket</div>
+                    <h3 class="card-title">India vs Pakistan</h3>
+                </div>
+            </div>
+
+            <!-- Cricket Card 2 -->
+            <div class="content-card">
+                <video muted loop poster="maxresdefault (1).jpg">
+                    <source src="India Stunned By Boult & Henry  India vs New Zealand - Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4" type="video/mp4">
+                </video>
+                <div class="play-icon">
+                    <svg width="50" height="48" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">World Cup 2019 • Cricket</div>
+                    <h3 class="card-title">India vs New Zealand</h3>
+                </div>
+            </div>
+
+            <!-- Cricket Card 3 -->
+            <div class="content-card">
+                <video muted loop poster="maxresdefault (2).jpg">
+                    <source src="Woakes & Roy Send England To Final!  Australia vs England - Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4" type="video/mp4">
+                </video>
+                <div class="play-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">World Cup 2019 • Cricket</div>
+                    <h3 class="card-title">Australia vs England</h3>
+                </div>
+            </div>
+
+            <!-- Cricket Card 4 -->
+            <div class="content-card">
+                <video muted loop poster="Australia-vs-New zealand.jpg">
+                    <source src="Boult Hat-Trick!  Australia vs New Zealand - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4" type="video/mp4">
+                </video>
+                <div class="play-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">World Cup 2019 • Cricket</div>
+                    <h3 class="card-title">Australia vs New Zealand</h3>
+                </div>
+            </div>
+
+            <!-- Cricket Card 5 -->
+            <div class="content-card">
+                <video muted loop poster="sddefault.jpg">
+                    <source src="Pakistan Win in Last Over!  Pakistan vs Afghanistan - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4" type="video/mp4">
+                </video>
+                <div class="play-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">World Cup 2019 • Cricket</div>
+                    <h3 class="card-title">Pakistan vs Afghanistan</h3>
+                </div>
+            </div>
+
+            <!-- Cricket Card 6 -->
+            <div class="content-card">
+                <video muted loop poster="Windies.jpg">
+                    <source src="Amazing Brathwaite 100!  West Indies v New Zealand - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4" type="video/mp4">
+                </video>
+                <div class="play-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">World Cup 2019 • Cricket</div>
+                    <h3 class="card-title">New Zealand vs West Indies</h3>
+                </div>
+            </div>
+        </div>
+        <button class="slider-arrow left">‹</button>
+        <button class="slider-arrow right">›</button>
+    </section>
+
+    <section class="content-row">
+        <h2 class="row-header">MOVIES</h2>
+        <div class="content-slider">
+            
+            <!-- Movie Card 1 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="The-Substance-2024-body-horror-1024x512.jpg">
+                        <source src="The Substance 2024 English (ORG 5.1) www.SSRmovies.Com 720p WEB-DL x264 ESubs.mkv" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Horror</div>
+                    <h3 class="card-title">The Substance</h3>
+                </div>
+            </div>
+
+            <!-- Movie Card 2 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Lalaland.jpg">
+                        <source src="La.La.Land.2016.1080p.English.Esubs.Vegamovies.To.mkv" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2016 • Romance</div>
+                    <h3 class="card-title">La La Land   </h3>
+                </div>
+            </div>
+
+            <!-- Movie Card 3 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Sonic-i mg.jpg">
+                        <source src="Sonic the Hedgehog 3 2024 AMZN Dual Audio Hindi (ORG 5.1) www.SSRmovies.Com 1080p WEB-DL x264 ESubs.mkv" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Action</div>
+                    <h3 class="card-title">Sonic the Hedgehog 3</h3>
+                </div>
+            </div>
+
+            <!-- Movie Card 4 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="spiderman.jpg">
+                        <source src="Spider-Man Across the Spider-Verse 2023 AMZN Dual Audio Hindi (ORG 5.1) www.SSRmovies.Com 1080p WEB-DL x264 ESubs.mkv" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2023 • Action</div>
+                    <h3 class="card-title">Spider-Man Across the Spider-Verse</h3>
+                </div>
+            </div>
+
+
+            <!-- Movie Card 5 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="jurassic-world-fallen-kingdom-1.jpg">
+                        <source src="Jurassic World 2 (2018) Dual Audio Hindi www.SSRmovies.Com ORG 720p BluRay ESubs.mkv" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2018 • Action</div>
+                    <h3 class="card-title">Jurassic World Fallen Kingdom</h3>
+                </div>
+            </div>
+
+
+
+            <!-- Movie Card 6 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="movie6_thumbnail.jpg">
+                        <source src="movie6.mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">Adventure • 2015</div>
+                    <h3 class="card-title">Jurassic World</h3>
+                </div>
+            </div>
+        </div>
+        <button class="slider-arrow left">‹</button>
+        <button class="slider-arrow right">›</button>
+    </section>
+
+    <section class="content-row">
+        <h2 class="row-header">SHORT FILMS</h2>
+        <div class="content-slider">
+            <!-- Short Film Card 1 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="2am-coffee.jpg">
+                        <source src="2 AM COFFEE - A short film  Sony FX3  4K - Forrain (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Drama</div>
+                    <h3 class="card-title">2 AM COFFEE</h3>
+                </div>
+            </div>
+
+            <!-- Short Film Card 2 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Screenshot 2025-02-01 174223.png">
+                        <source src="PAREIDOLIA - 1 Minute Short Film  Award Winning - Carlos Andrés Reyes - Filmmaker (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • DRAMA</div>
+                    <h3 class="card-title">PAREIDOLIA</h3>
+                </div>
+            </div>
+
+            <!-- Short Film Card 3 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Barbershop-.jpg">
+                        <source src="THE BARBERSHOP - Short Film - Isaac Carlton (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Thriller</div>
+                    <h3 class="card-title">THE BARBERSHOP</h3>
+                </div>
+            </div>
+
+            <!-- Short Film Card 4 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Stalled.jpg">
+                        <source src="STALLED  Omeleto - Omeleto (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Thriller</div>
+                    <h3 class="card-title">STALLED</h3>
+                </div>
+            </div>
+
+            <!-- Short Film Card 5 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="The-chair.jpg">
+                        <source src="THE CHAIR (Award Winning Horror Short Film) - that's a bad idea (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Horror</div>
+                    <h3 class="card-title">The Chair</h3>
+                </div>
+            </div>
+
+
+            <!-- Short Film Card 6 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Tunnel-img.jpg">
+                        <source src="Tunnel (Award-Winning Short Film) - Quixotable (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Horror</div>
+                    <h3 class="card-title">Tunnel</h3>
+                </div>
+            </div>
+        </div>
+
+        <button class="slider-arrow left">‹</button>
+        <button class="slider-arrow right">›</button>
+    </section>
+
+    <!-- New Football Section -->
+<section class="content-row">
+    <h2 class="row-header">FOOTBALL</h2>
+    <div class="content-slider">
+        <!-- Football Card 1 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="mancity.jpg">
+                    <source src="EXTENDED HIGHLIGHTS ｜ Man City 4-1 Liverpool ｜ Grealish inspires huge win.mp4" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-overlay">
+                <div class="card-meta">Premier League • 2024</div>
+                <h3 class="card-title">Manchester City vs Liverpool</h3>
+            </div>
+        </div>
+
+        <!-- Football Card 2 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="pppp123.jpg">
+                    <source src="Arsenal vs Liverpool 3-1 - All Goals & Extended Highlights - 2024.mp4" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-overlay">
+                <div class="card-meta">Premier League • 2024</div>
+                <h3 class="card-title">Arsenal vs Liverpool</h3>
+            </div>
+        </div>
+
+        <!-- Football Card 3 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="sddefault (1).jpg">
+                    <source src="Lionel Messi - All 21 Goals & Assists - 2023_24 (HD).mp4" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-overlay">
+                <div class="card-meta">Inter Miami • 2023/24</div>
+                <h3 class="card-title">Lionel Messi - All Goals & Assists</h3>
+            </div>
+        </div>
+
+        <!-- Football Card 4 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="hq720 (2).jpg">
+                    <source src="Cristiano Ronaldo - All Goals & Assists - 2023_24 (HD).mp4" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-overlay">
+                <div class="card-meta">Al Nassr • 2023/24</div>
+                <h3 class="card-title">Cristiano Ronaldo - All Goals & Assists</h3>
+            </div>
+        </div>
+
+        <!-- Football Card 5 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="skysports-erling-haaland-man-city_6450634.jpg">
+                    <source src="Erling Haaland - All Goals & Assists - 2023_24 (HD).mp4" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-overlay">
+                <div class="card-meta">Manchester City • 2023/24</div>
+                <h3 class="card-title">Erling Haaland - All Goals & Assists</h3>
+            </div>
+        </div>
+
+                <!-- Football Card 6 -->
+                <div class="content-card">
+                    <div class="video-wrapper">
+                        <video muted loop poster="hq720 (3).jpg">
+                            <source src="Kylian Mbappe - All Goals & Assists - 2023_24 (HD).mp4" type="video/mp4">
+                        </video>
+                        <div class="custom-video-controls">
+                            <div class="timeline-container">
+                                <div class="timeline">
+                                    <div class="progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="controls-wrapper">
+                                <div class="left-controls">
+                                    <button class="control-btn play-pause-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                            <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                        </svg>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-container">
+                                        <button class="control-btn volume-btn">
+                                            <svg width="24" height="24" viewBox="0 0 24 24">
+                                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                            </svg>
+                                        </button>
+                                        <div class="volume-slider">
+                                            <div class="volume-progress"></div>
+                                        </div>
+                                    </div>
+                                    <span class="time-display">
+                                        <span class="current-time">0:00</span>
+                                        <span class="time-separator">/</span>
+                                        <span class="total-time">0:00</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-overlay">
+                        <div class="card-meta">PSG • 2023/24</div>
+                        <h3 class="card-title">Kylian Mbappe - All Goals & Assists</h3>
+                    </div>
+                </div>
+        
+            </div>
+            <button class="slider-arrow left">‹</button>
+            <button class="slider-arrow right">›</button>
+        </section>        
+
+    <section class="content-row">
+        <h2 class="row-header">ANIME</h2>
+        <div class="content-slider">
+            <!-- Anime Card 1 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Demon-Slayer.jpg">
+                        <source src="The Hashiras Ambush Muzan! Infinity Castle Battle Begins! Demon Slayer Hashira Training Arc - AnimeClan (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Action</div>
+                    <h3 class="card-title">Demon Slayer</h3>
+                </div>
+            </div>
+
+            <!-- Anime Card 2 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="your-friendly-neighbor-spiderman-teaser-trailer-banner.jpg">
+                        <source src="Prmovies-Your_Friendly_Neighborhood_Spider-Man_S1E1.mp4" type="video/mp4">
+                    </video>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2022 • Superhero</div>
+                    <h3 class="card-title">Your Friendly Neighborhood Spider-Man</h3>
+                </div>
+            </div>
+
+
+            <!-- New Anime Card 3 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="jjk.jpg">
+                    <source src="[SubsPlease] Jujutsu Kaisen - 42 (1080p) [1080E162].mkv" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">2024 • Action</div>
+                    <h3 class="card-title">Jujutsu Kaisen</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Anime Card 4 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="Naruto.jpg">
+                    <source src="[Judas] Naruto Shippuuden - S01E01 [1080p][HEVC x265 10bit][Multi-Subs].mkv" type="video/mp4">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">Action • Adventure</div>
+                    <h3 class="card-title">Naruto Shippuden</h3>
+                </div>
+            </div>
+        </div>
+
+                <!-- New Anime Card 5 -->
+                <div class="content-card">
+                    <div class="video-wrapper">
+                        <video muted loop poster="dragon-ball-super-super-hero-images_ruwb.jpg">
+                            <source src="[SubsPlease] Dragon Ball Daima - 01 (1080p) [F8E62E1A].mkv" type="video/mp4">
+                        </video>
+                        <div class="custom-video-controls">
+                            <div class="timeline-container">
+                                <div class="timeline">
+                                    <div class="progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="controls-wrapper">
+                                <div class="left-controls">
+                                    <button class="control-btn play-pause-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                            <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                        </svg>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-container">
+                                        <button class="control-btn volume-btn">
+                                            <svg width="24" height="24" viewBox="0 0 24 24">
+                                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                            </svg>
+                                        </button>
+                                        <div class="volume-slider">
+                                            <div class="volume-progress"></div>
+                                        </div>
+                                    </div>
+                                    <span class="time-display">
+                                        <span class="current-time">0:00</span>
+                                        <span class="time-separator">/</span>
+                                        <span class="total-time">0:00</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-overlay">
+                        <div class="card-meta">2024 • Action</div>
+                        <h3 class="card-title">Dragon Ball Daima</h3>
+                    </div>
+                </div>
+        
+                <!-- New Anime Card 6 -->
+                <div class="content-card">
+                    <div class="video-wrapper">
+                        <video muted loop poster="hq720 (4).jpg">
+                            <source src="[SubsPlease] BLEACH Thousand-Year Blood War - 26 (1080p) [40B8F6EC].mkv" type="video/mp4">
+                        </video>
+                        <div class="custom-video-controls">
+                            <div class="timeline-container">
+                                <div class="timeline">
+                                    <div class="progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="controls-wrapper">
+                                <div class="left-controls">
+                                    <button class="control-btn play-pause-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                            <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                        </svg>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-container">
+                                        <button class="control-btn volume-btn">
+                                            <svg width="24" height="24" viewBox="0 0 24 24">
+                                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                            </svg>
+                                        </button>
+                                        <div class="volume-slider">
+                                            <div class="volume-progress"></div>
+                                        </div>
+                                    </div>
+                                    <span class="time-display">
+                                        <span class="current-time">0:00</span>
+                                        <span class="time-separator">/</span>
+                                        <span class="total-time">0:00</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-overlay">
+                        <div class="card-meta">2024 • Action</div>
+                        <h3 class="card-title">Bleach: Thousand-Year Blood War</h3>
+                    </div>
+                </div>
+        
+            </div>
+            <button class="slider-arrow left">‹</button>
+            <button class="slider-arrow right">›</button>
+        </section>
+            <!-- Add more anime cards as needed -->
+        </div>
+        <button class="slider-arrow left">‹</button>
+        <button class="slider-arrow right">›</button>
+    </section>
+
+    <section class="content-row">
+        <h2 class="row-header">UPCOMING CONTENT</h2>
+        <div class="content-slider">
+            <!-- Upcoming Card 1 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="deadpool-and-wolverine-home-ent-article-card.jpg">
+                        <source src="Deadpool & Wolverine  Official Trailer  In Theaters July 26 - Marvel Entertainment (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="upcoming-indicator" style="background: #e50914; color: white;">
+                        Coming Soon
+                    </div>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">March 2024 • Action</div>
+                    <h3 class="card-title">Deadpool & Wolverine</h3>
+                </div>
+            </div>
+
+            <!-- Upcoming Card 2 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="28+years+later+movie+poster.jpg">
+                        <source src="28 YEARS LATER – Official Trailer (HD).mp4" type="video/mp4">
+                    </video>
+
+
+                    <div class="upcoming-indicator" style="background: #e50914; color: white;">
+                        Coming Soon
+                    </div>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">April 2025 • Horror</div>
+                    <h3 class="card-title">28 Years Later</h3>
+                </div>
+            </div>
+
+
+            <!-- Upcoming Card 3 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="Daredavel-123.jpg">
+                        <source src="Marvel Television's Daredevil Born Again  Official Trailer  Disney+ - Marvel Entertainment (720p, h264).mp4" type="video/mp4">
+                    </video>
+                    <div class="upcoming-indicator" style="background: #e50914; color: white;">
+                        Coming Soon
+                    </div>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">May 2024 • Action</div>
+                    <h3 class="card-title">Daredevil: Born Again</h3>
+                </div>
+            </div>
+
+            <!-- Upcoming Card 4 -->
+            <div class="content-card">
+                <div class="video-wrapper">
+                    <video muted loop poster="supermanimg123.jpg">
+                        <source src="Superman ｜ Official Teaser Trailer.mp4" type="video/mp4">
+                    </video>
+
+                    <div class="upcoming-indicator" style="background: #e50914; color: white;">
+                        Coming Soon
+                    </div>
+                    <div class="custom-video-controls">
+                        <div class="timeline-container">
+                            <div class="timeline">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="controls-wrapper">
+                            <div class="left-controls">
+                                <button class="control-btn play-pause-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                    </svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-container">
+                                    <button class="control-btn volume-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <div class="volume-progress"></div>
+                                    </div>
+                                </div>
+                                <span class="time-display">
+                                    <span class="current-time">0:00</span>
+                                    <span class="time-separator">/</span>
+                                    <span class="total-time">0:00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">June 2024 • Action</div>
+                    <h3 class="card-title">Superman</h3>
+                </div>
+            </div>
+
+            <!-- New Upcoming Card 5 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="captain-america-brave-new-world.jpg">
+                    <source src="Captain America： Brave New World ｜ Official Trailer.mp4" type="video/mp4">
+                </video>
+                <div class="upcoming-indicator" style="background: #e50914; color: white;">
+                    Coming Soon
+                </div>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">February 2025 • Sci-Fi</div>
+                    <h3 class="card-title">Captain America: Brave New World</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Upcoming Card 6 -->
+        <div class="content-card">
+            <div class="video-wrapper">
+                <video muted loop poster="Thunderbolts123.jpg">
+                    <source src="Marvel Studios’ Thunderbolts＊ ｜ Teaser Trailer ｜ Only In Theaters May 2025.mp4"video/mp4">
+                </video>
+                <div class="upcoming-indicator" style="background: #e50914; color: white;">
+                    Coming Soon
+                </div>
+                <div class="custom-video-controls">
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-wrapper">
+                        <div class="left-controls">
+                            <button class="control-btn play-pause-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="play-icon">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-btn volume-btn">
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="volume-slider">
+                                    <div class="volume-progress"></div>
+                                </div>
+                            </div>
+                            <span class="time-display">
+                                <span class="current-time">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span class="total-time">0:00</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-overlay">
+                    <div class="card-meta">may 2025 • Sci-Fi</div>
+                    <h3 class="card-title">Thunderbolts*</h3>
+                </div>
+            </div>
+        </div>
+
+
+            <!-- Add more upcoming cards as needed -->
+        </div>
+        <button class="slider-arrow left">‹</button>
+        <button class="slider-arrow right">›</button>
+    </section>
+
+    <!-- Video Modal -->
+    <div id="highlightModal" class="video-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <video id="highlightVideo" controls>
+                <source src="" type="video/mp4">
+            </video>
+        </div>
+    </div>
+
+    <footer style="background: #1a1a1a; padding: 40px 0; margin-top: 60px;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px;">
+                <!-- Column 1 -->
+                <div>
+                    <h3 style="color: white; margin-bottom: 20px;">NextVerse</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">For You</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Sports</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Movies</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">TV Shows</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 2 -->
+                <div>
+                    <h3 style="color: white; margin-bottom: 20px;">Support</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Help Center</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Terms of Use</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Privacy Policy</a></li>
+                        <li><a href="#" style="color: #ccc; text-decoration: none; margin-bottom: 10px; display: block;">Content Complaints</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3 -->
+                <div>
+                    <h3 style="color: white; margin-bottom: 20px;">Connect With Us</h3>
+                    <div style="display: flex; gap: 15px;">
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Facebook.jpg" alt="Facebook" style="width: 20px; height: 20px;">
+                        </a>
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Twitter-x-logo.png" alt="Twitter" style="width: 20px; height: 20px;">
+                        </a>
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Instagram.png" alt="Instagram" style="width: 20px; height: 20px;">
+                        </a>
+                        <a href="#" style="background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <img src="Youtube-text-area-line.png" alt="YouTube" style="width: 20px; height: 20px;">
+                        </a>
+                    </div>
+                </div>
+
+            <!-- Copyright -->
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #333;">
+                <p style="color: #666; font-size: 14px;">Copyright © NextVerse Private Limited, 2024. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Get all necessary elements
+        const watchNowBtn = document.getElementById('watchNowBtn');
+        const modal = document.getElementById('videoModal');
+        const closeBtn = document.querySelector('.close-modal');
+        const fullVideo = document.getElementById('fullVideo');
+
+        // Watch Now button click handler
+        watchNowBtn.addEventListener('click', () => {
+            modal.style.display = 'block';
+            setTimeout(() => {
+                modal.classList.add('active');
+                previewVideo.pause(); // Pause the preview video
+                fullVideo.play().catch(error => {
+                    console.log("Video play failed:", error);
+                });
+            }, 10);
+        });
+
+        // Close button click handler
+        closeBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+            fullVideo.pause();
+            setTimeout(() => {
+                modal.style.display = 'none';
+                fullVideo.currentTime = 0; // Reset video time
+                previewVideo.play(); // Resume preview video
+            }, 300);
+        });
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeBtn.click();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'block') {
+                closeBtn.click();
+            }
+        });
+
+        // Quality selector functionality
+        const qualityBtn = document.querySelector('.quality-btn');
+        const qualityOptions = document.querySelectorAll('.quality-option');
+        const currentQuality = document.querySelector('.current-quality');
+
+        // Video sources for different qualities
+        const videoSources = {
+            '1080p': 'Recording 2025-01-31 151935.mp4',
+            '720p': 'Recording 2025-01-31 151935.mp4',
+            '480p': 'Recording 2025-01-31 151935.mp4',
+            '360p': 'Recording 2025-01-31 151935.mp4'
+        };
+
+        qualityOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const quality = this.dataset.quality;
+                const currentTime = fullVideo.currentTime;
+                const isPlaying = !fullVideo.paused;
+
+                // Update current quality display
+                currentQuality.textContent = quality;
+
+                // Remove active class from all options
+                qualityOptions.forEach(opt => opt.classList.remove('active'));
+                // Add active class to selected option
+                this.classList.add('active');
+
+                // Update video source
+                fullVideo.src = videoSources[quality];
+                fullVideo.currentTime = currentTime;
+
+                if (isPlaying) {
+                    fullVideo.play();
+                }
+            });
+        });
+
+        // Get the preview video element
+        const previewVideo = document.getElementById('previewVideo');
+
+        // Optional: Handle video loading errors
+        previewVideo.addEventListener('error', () => {
+            console.error('Video loading error:', previewVideo.error);
+        });
+
+        // Optional: Set up the preview video to only play first 5 seconds
+        previewVideo.addEventListener('loadedmetadata', () => {
+            const previewDuration = 5;
+            
+            const handlePreviewLoop = () => {
+                if (previewVideo.currentTime >= previewDuration) {
+                    previewVideo.currentTime = 0;
+                }
+            };
+
+            previewVideo.addEventListener('timeupdate', handlePreviewLoop);
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const previewVideo = document.getElementById('previewVideo');
+            
+            // Ensure video plays on mobile
+            previewVideo.play().catch(function(error) {
+                console.log("Video autoplay failed:", error);
+            });
+
+            // Handle video loading
+            previewVideo.addEventListener('loadeddata', function() {
+                previewVideo.classList.add('loaded');
+            });
+
+            // Handle video errors
+            previewVideo.addEventListener('error', function(e) {
+                console.error('Video error:', e);
+                previewVideo.style.display = 'none';
+            });
+
+            // Optimize performance by limiting preview duration
+            const PREVIEW_DURATION = 5; // seconds
+            
+            function handlePreviewLoop() {
+                if (previewVideo.currentTime >= PREVIEW_DURATION) {
+                    previewVideo.currentTime = 0;
+                }
+            }
+
+            previewVideo.addEventListener('timeupdate', handlePreviewLoop);
+
+            // Cleanup
+            return () => {
+                previewVideo.removeEventListener('timeupdate', handlePreviewLoop);
+            };
+        });
+
+        // Pause video when tab is not visible to save resources
+        document.addEventListener('visibilitychange', function() {
+            const previewVideo = document.getElementById('previewVideo');
+            if (document.hidden) {
+                previewVideo.pause();
+            } else {
+                previewVideo.play().catch(function(error) {
+                    console.log("Video resume failed:", error);
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('.search-bar');
+            const searchResults = document.createElement('div');
+            searchResults.className = 'search-results';
+            document.querySelector('.search-container').appendChild(searchResults);
+            const searchButton = document.querySelector('.search-button');
+
+            // Sample search data with video sources
+            const searchData = [
+                {
+                    title: 'India vs New Zealand',
+                    meta: 'ICC Cricket World Cup 2019',
+                    image: 'maxresdefault (1).jpg',
+                    videoSrc: 'India Stunned By Boult & Henry  India vs New Zealand - Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4'
+                },
+                {
+                    title: 'Australia vs England',
+                    meta: 'Semi Final • Cricket World Cup',
+                    image: 'maxresdefault (2).jpg',
+                    videoSrc: 'Woakes & Roy Send England To Final!  Australia vs England - Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4'
+                },
+                {
+                    title: 'Australia vs New Zealand',
+                    meta: 'ICC Cricket World Cup 2019',
+                    image: 'Australia-vs-New zealand.jpg',
+                    videoSrc: 'Boult Hat-Trick!  Australia vs New Zealand - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4'
+                },
+                {
+                    title: 'Spiderman Across the Spiderverse',
+                    meta: 'action',
+                    image: 'spiderman.jpg',
+                    videoSrc: 'Spider-Man Across the Spider-Verse 2023 AMZN Dual Audio Hindi (ORG 5.1) www.SSRmovies.com 1080p WEB-DL x264 ESubs.mkv'
+                },
+                {
+                    title: 'Pareidolia',
+                    meta: 'drama',
+                    image: 'Screenshot 2025-02-01 174223.png',
+                    videoSrc: 'PAREIDOLIA - 1 Minute Short Film  Award Winning - Carlos Andrés Reyes - Filmmaker (720p, h264).mp4'
+                },
+                {
+                    title: 'The Chair',
+                    meta: 'horror',
+                    image: 'the-chair.jpg',
+                    videoSrc: 'THE CHAIR (Award Winning Horror Short Film) - that a bad idea (720p, h264).mp4'
+                },
+                {
+                    title: 'Tunnel',
+                    meta: 'horror',
+                    image: 'Tunnel-img.jpg',
+                    videoSrc: 'Tunnel (Award-Winning Short Film) - Quixotable (720p, h264).mp4'
+                },
+                {
+                    title: 'Stalled',
+                    meta: 'horror',
+                    image: 'Stalled.jpg',
+                    videoSrc: 'STALLED  Omeleto - Omeleto (720p, h264).mp4'
+                },
+                {
+                    title: '2 AM Coffee',
+                    meta: 'drama',
+                    image: '2am-coffee.jpg',
+                    videoSrc: '2 AM COFFEE - A short film  Sony FX3  4K - Forrain (720p, h264).mp4'
+                },
+                {
+                    title: 'The Barber Shop',
+                    meta: 'thriller',
+                    image: 'Barbershop-.jpg',
+                    videoSrc: 'THE BARBERSHOP - Short Film - Isaac Carlton (720p, h264).mp4'    
+                },
+                {
+                    title: 'The Substance',
+                    meta: 'horror',
+                    image: 'The-Substance-2024-body-horror-1024x512.jpg',
+                    videoSrc: 'The Substance 2024 (ORG 5.1) www.SSRmovies.com 1080p WEB-DL x264 ESubs.mkv'
+                },
+                {
+                    title: 'La La Land',
+                    meta: 'drama',
+                    image: 'Lalaland.jpg',
+                    videoSrc: 'La.La.Land.2016.1080p.English.Esubs.Vegamovies.To.mkv'
+                },
+                {
+                    title: 'Sonic the Hedgehog',
+                    meta: 'action',
+                    image: 'Sonic-i mg.jpg',
+                    videoSrc: 'Sonic the Hedghog 3 2024 AMZN Dual Audio Hindi (ORG 5.1) www.SSRmovies.com 1080p WEB-DL x264 ESubs.mkv'
+                },
+                {
+                    title: 'India vs Pakistan',
+                    meta: 'ICC Cricket World Cup 2019',
+                    image: 'Rohitimg.jpg',
+                    videoSrc: 'Rohit Sharma Hits 140!  India v Pakistan - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4"'
+                },
+                {
+                    title: 'Pakistan vs Afganistan',
+                    meta: 'ICC Cricket World Cup 2019',
+                    image: 'sddefault.jpg',
+                    videoSrc: 'Pakistan Win in Last Over!  Pakistan vs Afghanistan - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4'
+                },
+
+
+                {
+                    title: 'New Zealand vs West Indies',
+                    meta: 'ICC Cricket World Cup 2019',
+                    image: 'Windies.jpg',
+                    videoSrc: 'Amazing Brathwaite 100!  West Indies v New Zealand - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4'     
+                },
+
+
+                {
+                    title: 'West Indies vs Bangladesh',
+                    meta: 'ICC Cricket World Cup 2019',
+                    image: 'hq720.jpg',
+                    videoSrc: 'Shakib Stars In Huge Chase!  Windies vs Bangladesh - Match Highlights  ICC Cricket World Cup 2019 - ICC (720p, h264).mp4'
+                },
+                {
+                    title: 'Jurassic World Fallen Kingdom',
+                    meta: 'action',
+                    image: 'jurassic-world-fallen-kingdom-1.jpg',
+                    videoSrc: 'Jurassic World 2 (2018) Dual Audio Hindi www.SSRmovies.Com ORG 720p BluRay ESubs.mkv'
+                }
+
+            ];
+
+
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            function performSearch(query) {
+                if (!query) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+
+                const filteredResults = searchData.filter(item =>
+                    item.title.toLowerCase().includes(query.toLowerCase()) ||
+                    item.meta.toLowerCase().includes(query.toLowerCase())
+                );
+
+                displayResults(filteredResults);
+            }
+
+            function displayResults(results) {
+                if (results.length === 0) {
+                    searchResults.innerHTML = `
+                        <div class="search-result-item">
+                            <div class="result-info">
+                                <div class="result-title">No results found</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    searchResults.innerHTML = results.map(result => `
+                        <div class="search-result-item" data-video-src="${result.videoSrc}">
+                            <img src="${result.image}" alt="${result.title}">
+                            <div class="result-info">
+                                <div class="result-title">${result.title}</div>
+                                <div class="result-meta">${result.meta}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Add click handlers to search results
+                    document.querySelectorAll('.search-result-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const videoSrc = item.dataset.videoSrc;
+                            const modal = document.getElementById('videoModal');
+                            const modalVideo = document.getElementById('fullVideo');
+                            
+                            modalVideo.src = videoSrc;
+                            modal.style.display = 'block';
+                            searchResults.style.display = 'none';
+                            searchInput.value = '';
+                            
+                            setTimeout(() => {
+                                modal.classList.add('active');
+                                modalVideo.play().catch(error => {
+                                    console.log("Video play failed:", error);
+                                });
+                            }, 10);
+                        });
+                    });
+                }
+                searchResults.style.display = 'block';
+            }
+
+            const debouncedSearch = debounce(performSearch, 300);
+
+            searchInput.addEventListener('input', (e) => {
+                debouncedSearch(e.target.value);
+            });
+
+            searchButton.addEventListener('click', () => {
+                performSearch(searchInput.value);
+            });
+
+            // Close search results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+
+            // Handle Enter key
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch(searchInput.value);
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('highlightModal');
+            const modalVideo = document.getElementById('highlightVideo');
+            const closeBtn = modal.querySelector('.close-modal');
+
+            // Handle clicks on highlight cards
+            document.querySelectorAll('.content-card').forEach(card => {
+                const video = card.querySelector('video');
+                if (video) {
+                    card.addEventListener('click', () => {
+                        const videoSrc = video.querySelector('source').src;
+                        modalVideo.src = videoSrc;
+                        modal.style.display = 'block';
+                        setTimeout(() => {
+                            modal.classList.add('active');
+                            modalVideo.play().catch(error => {
+                                console.log("Video play failed:", error);
+                            });
+                        }, 10);
+                    });
+                }
+            });
+
+            // Close modal function
+            const closeModal = () => {
+                modal.classList.remove('active');
+                modalVideo.pause();
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    modalVideo.src = ''; // Clear the source
+                }, 300);
+            };
+
+            // Close button click handler
+            closeBtn.addEventListener('click', closeModal);
+
+            // Click outside to close
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // Close on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    closeModal();
+                }
+            });
+
+            // Preview hover effect
+            document.querySelectorAll('.content-card').forEach(card => {
+                const video = card.querySelector('video');
+                if (video) {
+                    card.addEventListener('mouseenter', () => {
+                        video.play().catch(err => console.log('Preview play failed:', err));
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        video.pause();
+                        video.currentTime = 0;
+                    });
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all content rows
+            const contentRows = document.querySelectorAll('.content-row');
+
+            contentRows.forEach(row => {
+                const slider = row.querySelector('.content-slider');
+                const leftArrow = row.querySelector('.slider-arrow.left');
+                const rightArrow = row.querySelector('.slider-arrow.right');
+                const cardWidth = 320 + 16; // card width + gap
+
+                // Left arrow click handler
+                leftArrow.addEventListener('click', () => {
+                    slider.scrollBy({
+                        left: -cardWidth,
+                        behavior: 'smooth'
+                    });
+                });
+
+                // Right arrow click handler
+                rightArrow.addEventListener('click', () => {
+                    slider.scrollBy({
+                        left: cardWidth,
+                        behavior: 'smooth'
+                    });
+                });
+
+                // Update arrow visibility based on scroll position
+                const updateArrowVisibility = () => {
+                    const isAtStart = slider.scrollLeft <= 0;
+                    const isAtEnd = slider.scrollLeft >= slider.scrollWidth - slider.clientWidth - 1;
+
+                    leftArrow.style.opacity = isAtStart ? '0.5' : '1';
+                    leftArrow.style.cursor = isAtStart ? 'default' : 'pointer';
+
+                    rightArrow.style.opacity = isAtEnd ? '0.5' : '1';
+                    rightArrow.style.cursor = isAtEnd ? 'default' : 'pointer';
+                };
+
+                // Listen for scroll events
+                slider.addEventListener('scroll', updateArrowVisibility);
+                
+                // Initial arrow visibility check
+                updateArrowVisibility();
+
+                // Handle touch events for mobile
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+
+                slider.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    slider.classList.add('active');
+                    startX = e.pageX - slider.offsetLeft;
+                    scrollLeft = slider.scrollLeft;
+                });
+
+                slider.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    slider.classList.remove('active');
+                });
+
+                slider.addEventListener('mouseup', () => {
+                    isDown = false;
+                    slider.classList.remove('active');
+                });
+
+                slider.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - slider.offsetLeft;
+                    const walk = (x - startX) * 2;
+                    slider.scrollLeft = scrollLeft - walk;
+                });
+            });
+
+            // Video preview functionality
+            const cards = document.querySelectorAll('.content-card');
+            
+            cards.forEach(card => {
+                const video = card.querySelector('video');
+                if (video) {
+                    // Load video when card becomes visible
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                video.load();
+                            }
+                        });
+                    }, { threshold: 0.1 });
+
+                    observer.observe(card);
+
+                    // Hover preview
+                    card.addEventListener('mouseenter', () => {
+                        if (video.readyState >= 2) {
+                            video.play().catch(err => console.log('Preview play failed:', err));
+                        }
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        video.pause();
+                        video.currentTime = 0;
+                    });
+
+                    // Click to play in modal
+                    card.addEventListener('click', () => {
+                        const modalVideo = document.getElementById('highlightVideo');
+                        const modal = document.getElementById('highlightModal');
+                        
+                        modalVideo.src = video.querySelector('source').src;
+                        modal.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            modal.classList.add('active');
+                            modalVideo.play().catch(error => {
+                                console.log("Video play failed:", error);
+                            });
+                        }, 10);
+                    });
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Navbar scroll effect
+            const navbar = document.querySelector('.navbar');
+            const scrollThreshold = 50;
+
+            function handleScroll() {
+                if (window.scrollY > scrollThreshold) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            }
+
+            window.addEventListener('scroll', handleScroll, { passive: true });
+
+            // Responsive video loading
+            const videos = document.querySelectorAll('video');
+            const videoObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const video = entry.target;
+                        video.load();
+                        if (video.hasAttribute('autoplay')) {
+                            video.play().catch(() => {});
+                        }
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            videos.forEach(video => {
+                videoObserver.observe(video);
+                video.setAttribute('playsinline', '');
+            });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Responsive slider navigation
+            const sliders = document.querySelectorAll('.content-slider');
+            sliders.forEach(slider => {
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+
+                slider.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    slider.classList.add('active');
+                    startX = e.pageX - slider.offsetLeft;
+                    scrollLeft = slider.scrollLeft;
+                });
+
+                slider.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    slider.classList.remove('active');
+                });
+
+                slider.addEventListener('mouseup', () => {
+                    isDown = false;
+                    slider.classList.remove('active');
+                });
+
+                slider.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - slider.offsetLeft;
+                    const walk = (x - startX) * 2;
+                    slider.scrollLeft = scrollLeft - walk;
+                });
+            });
+
+            // Performance optimization
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                if (resizeTimeout) {
+                    clearTimeout(resizeTimeout);
+                }
+                resizeTimeout = setTimeout(() => {
+                    // Handle resize operations
+                }, 250);
+            }, { passive: true });
+        });
+
+        // Add this to your existing script
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('fullVideo');
+            const playPauseBtn = document.querySelector('.play-pause-btn');
+            const playIcon = playPauseBtn.querySelector('.play-icon');
+            const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+            const timeline = document.querySelector('.timeline');
+            const progressBar = document.querySelector('.progress-bar');
+            const currentTimeDisplay = document.querySelector('.current-time');
+            const totalTimeDisplay = document.querySelector('.total-time');
+            const volumeBtn = document.querySelector('.volume-btn');
+            const volumeSlider = document.querySelector('.volume-slider');
+            const volumeProgress = document.querySelector('.volume-progress');
+            const fullscreenBtn = document.querySelector('.fullscreen-btn');
+
+            // Play/Pause
+            playPauseBtn.addEventListener('click', () => {
+                if (video.paused) {
+                    video.play();
+                    playIcon.style.display = 'none';
+                    pauseIcon.style.display = 'block';
+                } else {
+                    video.pause();
+                    playIcon.style.display = 'block';
+                    pauseIcon.style.display = 'none';
+                }
+            });
+
+            // Timeline update
+            video.addEventListener('timeupdate', () => {
+                const percentage = (video.currentTime / video.duration) * 100;
+                progressBar.style.width = `${percentage}%`;
+                currentTimeDisplay.textContent = formatTime(video.currentTime);
+            });
+
+            // Timeline seek
+            timeline.addEventListener('click', (e) => {
+                const rect = timeline.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                video.currentTime = pos * video.duration;
+            });
+
+            // Volume control
+            volumeSlider.addEventListener('click', (e) => {
+                const rect = volumeSlider.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                video.volume = pos;
+                volumeProgress.style.width = `${pos * 100}%`;
+            });
+
+            // Fullscreen
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    video.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            // Format time helper function
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                seconds = Math.floor(seconds % 60);
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Update total duration once metadata is loaded
+            video.addEventListener('loadedmetadata', () => {
+                totalTimeDisplay.textContent = formatTime(video.duration);
+            });
+        });
+
+        // Add this to your existing script
+        document.addEventListener('DOMContentLoaded', function() {
+            const previewVideo = document.getElementById('previewVideo');
+            
+            // Force video to play on load
+            previewVideo.play().catch(function(error) {
+                console.log("Video play failed:", error);
+            });
+
+            // Add event listener to check if video is playing
+            previewVideo.addEventListener('playing', function() {
+                console.log("Preview video is now playing");
+            });
+
+            // Add error listener to catch any loading issues
+            previewVideo.addEventListener('error', function(e) {
+                console.log("Error loading video:", e);
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all video cards and modal elements
+            const videoCards = document.querySelectorAll('.content-card');
+            const videoModal = document.getElementById('videoModal');
+            const modalVideo = document.getElementById('fullVideo');
+            const closeModal = document.querySelector('.close-modal');
+            
+            // Video controls elements
+            const playPauseBtn = document.querySelector('.play-pause-btn');
+            const playIcon = playPauseBtn.querySelector('.play-icon');
+            const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+            const timeline = document.querySelector('.timeline');
+            const progressBar = document.querySelector('.progress-bar');
+            const currentTimeDisplay = document.querySelector('.current-time');
+            const totalTimeDisplay = document.querySelector('.total-time');
+            const volumeBtn = document.querySelector('.volume-btn');
+            const volumeSlider = document.querySelector('.volume-slider');
+            const volumeProgress = document.querySelector('.volume-progress');
+            const fullscreenBtn = document.querySelector('.fullscreen-btn');
+
+            // Add click event to all video cards
+            videoCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const videoSource = card.querySelector('video source').src;
+                    modalVideo.src = videoSource;
+                    videoModal.style.display = 'block';
+                    setTimeout(() => {
+                        videoModal.classList.add('active');
+                        // Load and play the video
+                        modalVideo.load();
+                        modalVideo.play().then(() => {
+                            playIcon.style.display = 'none';
+                            pauseIcon.style.display = 'block';
+                        }).catch(error => {
+                            console.log("Error playing video:", error);
+                        });
+                    }, 10);
+                });
+            });
+
+            // Close modal
+            closeModal.addEventListener('click', () => {
+                modalVideo.pause();
+                videoModal.classList.remove('active');
+                setTimeout(() => {
+                    videoModal.style.display = 'none';
+                    modalVideo.src = ''; // Clear the source
+                }, 300);
+            });
+
+            // Play/Pause
+            playPauseBtn.addEventListener('click', () => {
+                if (modalVideo.paused) {
+                    modalVideo.play();
+                    playIcon.style.display = 'none';
+                    pauseIcon.style.display = 'block';
+                } else {
+                    modalVideo.pause();
+                    playIcon.style.display = 'block';
+                    pauseIcon.style.display = 'none';
+                }
+            });
+
+            // Timeline update
+            modalVideo.addEventListener('timeupdate', () => {
+                const percentage = (modalVideo.currentTime / modalVideo.duration) * 100;
+                progressBar.style.width = `${percentage}%`;
+                currentTimeDisplay.textContent = formatTime(modalVideo.currentTime);
+            });
+
+            // Timeline seek
+            timeline.addEventListener('click', (e) => {
+                const rect = timeline.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                modalVideo.currentTime = pos * modalVideo.duration;
+            });
+
+            // Volume control
+            volumeSlider.addEventListener('click', (e) => {
+                const rect = volumeSlider.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                modalVideo.volume = pos;
+                volumeProgress.style.width = `${pos * 100}%`;
+            });
+
+            // Fullscreen
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    modalVideo.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            // Format time helper function
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                seconds = Math.floor(seconds % 60);
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Update total duration once metadata is loaded
+            modalVideo.addEventListener('loadedmetadata', () => {
+                totalTimeDisplay.textContent = formatTime(modalVideo.duration);
+            });
+
+            // Watch Now button in hero section
+            const watchNowBtn = document.getElementById('watchNowBtn');
+            if (watchNowBtn) {
+                watchNowBtn.addEventListener('click', () => {
+                    const heroVideo = document.getElementById('previewVideo');
+                    modalVideo.src = heroVideo.querySelector('source').src;
+                    videoModal.style.display = 'block';
+                    setTimeout(() => {
+                        videoModal.classList.add('active');
+                        modalVideo.load();
+                        modalVideo.play().then(() => {
+                            playIcon.style.display = 'none';
+                            pauseIcon.style.display = 'block';
+                        }).catch(error => {
+                            console.log("Error playing video:", error);
+                        });
+                    }, 10);
+                });
+            }
+        });
+
+        // Add this to your existing script
+        document.addEventListener('DOMContentLoaded', function() {
+            const contentCards = document.querySelectorAll('.content-card');
+            
+            contentCards.forEach(card => {
+                const video = card.querySelector('video');
+                const playPauseBtn = card.querySelector('.play-pause-btn');
+                const playIcon = card.querySelector('.play-icon');
+                const pauseIcon = card.querySelector('.pause-icon');
+                const timeline = card.querySelector('.timeline');
+                const progressBar = card.querySelector('.progress-bar');
+                const currentTimeDisplay = card.querySelector('.current-time');
+                const totalTimeDisplay = card.querySelector('.total-time');
+                const volumeBtn = card.querySelector('.volume-btn');
+                const volumeSlider = card.querySelector('.volume-slider');
+                const volumeProgress = card.querySelector('.volume-progress');
+
+                // Prevent card click when interacting with controls
+                card.querySelector('.custom-video-controls').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+
+                // Play/Pause
+                playPauseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (video.paused) {
+                        video.play();
+                        playIcon.style.display = 'none';
+                        pauseIcon.style.display = 'block';
+                    } else {
+                        video.pause();
+                        playIcon.style.display = 'block';
+                        pauseIcon.style.display = 'none';
+                    }
+                });
+
+                // Timeline update
+                video.addEventListener('timeupdate', () => {
+                    const percentage = (video.currentTime / video.duration) * 100;
+                    progressBar.style.width = `${percentage}%`;
+                    currentTimeDisplay.textContent = formatTime(video.currentTime);
+                });
+
+                // Timeline seek
+                timeline.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const rect = timeline.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    video.currentTime = pos * video.duration;
+                });
+
+                // Volume control
+                volumeSlider.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const rect = volumeSlider.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    video.volume = pos;
+                    volumeProgress.style.width = `${pos * 100}%`;
+                });
+
+                // Format time helper function
+                function formatTime(seconds) {
+                    const minutes = Math.floor(seconds / 60);
+                    seconds = Math.floor(seconds % 60);
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+
+                // Update total duration once metadata is loaded
+                video.addEventListener('loadedmetadata', () => {
+                    totalTimeDisplay.textContent = formatTime(video.duration);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
